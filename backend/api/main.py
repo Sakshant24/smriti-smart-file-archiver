@@ -84,7 +84,7 @@ def restore_file(file_id: int, db: Session = Depends(database.get_db)):
 def get_settings(db: Session = Depends(database.get_db)):
     setting = db.query(models.Settings).first()
     if not setting:
-        setting = models.Settings()
+        setting = models.Settings(auto_archive_enabled=False, size_threshold=100.0, inactivity_days=180)
         db.add(setting)
         db.commit()
         db.refresh(setting)
@@ -94,7 +94,7 @@ def get_settings(db: Session = Depends(database.get_db)):
 def update_settings(settings_update: SettingsUpdate, db: Session = Depends(database.get_db)):
     setting = db.query(models.Settings).first()
     if not setting:
-        setting = models.Settings()
+        setting = models.Settings(auto_archive_enabled=False, size_threshold=100.0, inactivity_days=180)
         db.add(setting)
     
     if settings_update.auto_archive_enabled is not None:
