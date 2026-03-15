@@ -29,7 +29,6 @@ share/python-wheels/
 *.egg
 
 # Database & Archives
-smriti.db
 backend/db/*.db
 data/archives/
 *.zip
