@@ -9,8 +9,7 @@ from backend.db import models
 from backend.db.database import SessionLocal
 
 class FileMonitorHandler(FileSystemEventHandler):
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self):
         super().__init__()
 
     def process_file_event(self, event):
@@ -25,7 +24,6 @@ class FileMonitorHandler(FileSystemEventHandler):
                 return
 
             if not os.path.exists(file_path):
-                # File might have been deleted, ignore or handle deletion logic
                 return
                 
             stat = os.stat(file_path)
@@ -37,33 +35,32 @@ class FileMonitorHandler(FileSystemEventHandler):
             access_time = datetime.fromtimestamp(stat.st_atime)
             mod_time = datetime.fromtimestamp(stat.st_mtime)
 
-            db_file = self.db.query(models.FileDetail).filter(models.FileDetail.file_path == file_path).first()
-            
-            if db_file:
-                db_file.file_size = file_size_mb
-                db_file.last_modified_time = mod_time
+            with SessionLocal() as db:
+                db_file = db.query(models.FileDetail).filter(models.FileDetail.file_path == file_path).first()
                 
-                # Check if access time actually advanced to register a new access
-                if access_time > db_file.last_access_time:
-                    db_file.last_access_time = access_time
-                    db_file.access_count += 1
-            else:
-                db_file = models.FileDetail(
-                    file_path=file_path,
-                    file_name=file_name,
-                    file_size=file_size_mb,
-                    last_access_time=access_time,
-                    last_modified_time=mod_time,
-                    file_type=ext.lower().replace('.', '') if ext else 'unknown',
-                    access_count=1
-                )
-                self.db.add(db_file)
-                
-            self.db.commit()
+                if db_file:
+                    db_file.file_size = file_size_mb
+                    db_file.last_modified_time = mod_time
+                    
+                    if access_time > db_file.last_access_time:
+                        db_file.last_access_time = access_time
+                        db_file.access_count += 1
+                else:
+                    db_file = models.FileDetail(
+                        file_path=file_path,
+                        file_name=file_name,
+                        file_size=file_size_mb,
+                        last_access_time=access_time,
+                        last_modified_time=mod_time,
+                        file_type=ext.lower().replace('.', '') if ext else 'unknown',
+                        access_count=1
+                    )
+                    db.add(db_file)
+                    
+                db.commit()
             
         except Exception as e:
             print(f"Error processing file {event.src_path}: {e}")
-            self.db.rollback()
 
     def on_modified(self, event):
         self.process_file_event(event)
@@ -72,8 +69,7 @@ class FileMonitorHandler(FileSystemEventHandler):
         self.process_file_event(event)
 
 def start_monitor(directories_to_watch: list[str]):
-    db = SessionLocal()
-    event_handler = FileMonitorHandler(db)
+    event_handler = FileMonitorHandler()
     observer = Observer()
     
     for directory in directories_to_watch:
@@ -90,4 +86,3 @@ def start_monitor(directories_to_watch: list[str]):
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
-    db.close()
