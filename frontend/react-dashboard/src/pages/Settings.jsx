@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Save, Settings2, Shield, Bell, CheckCircle2 } from 'lucide-react';
+import { Save, Shield, Bell } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -147,7 +147,7 @@ export default function Settings() {
                 exit={{ opacity: 0 }}
                 className="text-emerald-400 flex items-center gap-2 font-bold"
               >
-                <CheckCircle2 size={18} /> Configuration Applied
+                <span className="mr-2">✓</span> Configuration Applied
               </motion.span>
             )}
           </AnimatePresence>
