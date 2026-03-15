@@ -9,20 +9,31 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 from backend.monitor.watcher import start_monitor
+from backend.monitor.scanner import scan_existing_files
 from scripts.scheduler import run_prediction_and_archiving
 
 def configure_realtime_folder():
-    """Sets up a secure folder on the desktop for the user to drop files into and test SMRITI."""
-    desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop') 
-    target_dir = os.path.join(desktop, 'SMRITI_Test_Folder')
-    os.makedirs(target_dir, exist_ok=True)
-    return target_dir
+    """Sets up realistic OS tracking covering core user directories."""
+    user_home = os.environ['USERPROFILE']
+    docs = os.path.join(user_home, 'Documents')
+    downloads = os.path.join(user_home, 'Downloads')
+    
+    dirs_to_watch = []
+    if os.path.exists(docs): dirs_to_watch.append(docs)
+    if os.path.exists(downloads): dirs_to_watch.append(downloads)
+    
+    return dirs_to_watch
 
-def monitor_thread(folder_path):
+def monitor_thread(folder_paths):
     print(f"\n[+] Watchdog Initialized.")
-    print(f"[*] REAL-TIME MONITORING FOLDER: {folder_path}")
-    print("[*] Drop files into this folder to see them appear on the dashboard.\n")
-    start_monitor([folder_path])
+    for path in folder_paths:
+        print(f"[*] MONITORING: {path}")
+        
+    print(f"\n[*] Bootstrapping Database with Existing OS Files...")
+    scan_existing_files(folder_paths)
+    
+    print(f"\n[*] OS Initial Scan Complete. Starting Real-time Event Listener...")
+    start_monitor(folder_paths)
 
 if __name__ == "__main__":
     print("="*60)
@@ -30,18 +41,18 @@ if __name__ == "__main__":
     print("="*60)
     
     # 1. Start the folder monitor
-    folder_to_watch = configure_realtime_folder()
-    t = threading.Thread(target=monitor_thread, args=(folder_to_watch,), daemon=True)
+    folders_to_watch = configure_realtime_folder()
+    t = threading.Thread(target=monitor_thread, args=(folders_to_watch,), daemon=True)
     t.start()
     
     # 2. Run the ML Prediction Loop
     print("[+] Background ML Predictor Initialized.")
-    print("[*] Auto-evaluating files every 30 seconds...\n")
+    print("[*] Auto-evaluating files every 2 seconds...\n")
     
     while True:
         try:
             run_prediction_and_archiving()
-            time.sleep(30)
+            time.sleep(2)
         except KeyboardInterrupt:
             print("\n[-] SMRITI AI Shutting Down...")
             sys.exit(0)
