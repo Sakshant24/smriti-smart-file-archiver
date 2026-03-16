@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Save, Shield, Bell } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000';
