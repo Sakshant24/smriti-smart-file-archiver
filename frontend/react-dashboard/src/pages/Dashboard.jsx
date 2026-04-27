@@ -57,8 +57,8 @@ export default function Dashboard() {
       const resp = await axios.get(`${API_BASE}/files`);
       const allFiles = resp.data;
       
-      const archived = allFiles.filter(f => f.archived);
-      const dormant = allFiles.filter(f => f.predicted_dormant && !f.archived);
+      const archived = allFiles.filter(f => f.lifecycle_state === "ARCHIVED");
+      const dormant = allFiles.filter(f => f.lifecycle_state === "DORMANT");
       
       const spaceSaved = archived.reduce((acc, f) => acc + (f.file_size || 0), 0);
       const totalSpace = allFiles.reduce((acc, f) => acc + (f.file_size || 0), 0);

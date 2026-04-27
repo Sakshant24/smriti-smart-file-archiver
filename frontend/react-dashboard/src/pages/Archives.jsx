@@ -64,7 +64,8 @@ export default function Archives() {
               <tr className="bg-zinc-950/50 border-b border-zinc-800/80 text-zinc-500 text-xs uppercase tracking-widest font-bold">
                 <th className="p-6 w-1/3">Original Payload</th>
                 <th className="p-6">Raw Size</th>
-                <th className="p-6">Secure Mount Path</th>
+                <th className="p-6">Zstd Ratio</th>
+                <th className="p-6">Archive Size</th>
                 <th className="p-6 text-right">Executor</th>
               </tr>
             </thead>
@@ -72,7 +73,7 @@ export default function Archives() {
               <AnimatePresence>
                 {loading && files.length === 0 ? (
                   <motion.tr initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-                    <td colSpan="4" className="p-16 text-center text-zinc-500 font-medium">
+                    <td colSpan="5" className="p-16 text-center text-zinc-500 font-medium">
                       <div className="flex justify-center items-center gap-4">
                         <RefreshCw className="animate-spin text-emerald-500" size={24} />
                         Decrypting vault signatures...
@@ -81,7 +82,7 @@ export default function Archives() {
                   </motion.tr>
                 ) : files.length === 0 ? (
                   <motion.tr initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-                    <td colSpan="4" className="p-24 text-center">
+                    <td colSpan="5" className="p-24 text-center">
                       <div className="flex flex-col items-center text-zinc-600">
                         <PackageOpen size={56} className="mb-6 opacity-30 text-zinc-500" />
                         <p className="text-xl text-zinc-300 font-display font-bold">The Vault is Empty</p>
@@ -110,8 +111,15 @@ export default function Archives() {
                           {file.file_size ? file.file_size.toFixed(2) : '0.00'} <span className="text-zinc-600 ml-1">MB</span>
                         </span>
                       </td>
-                      <td className="p-6 text-zinc-500 font-mono text-[10px] tracking-wide truncate max-w-xs" title={file.archive_path}>
-                        {file.archive_path}
+                      <td className="p-6">
+                        <span className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20" title={`Speed: ${file.compression_time_ms?.toFixed(2)}ms`}>
+                          {file.compression_ratio ? file.compression_ratio.toFixed(2) : '1.00'}x
+                        </span>
+                      </td>
+                      <td className="p-6">
+                        <span className="text-zinc-400 font-medium bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-800/80">
+                          {file.archive_size ? file.archive_size.toFixed(2) : '0.00'} MB
+                        </span>
                       </td>
                       <td className="p-6 text-right">
                         <button
