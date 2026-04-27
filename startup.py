@@ -11,6 +11,11 @@ if project_root not in sys.path:
 from backend.monitor.watcher import start_monitor
 from backend.monitor.scanner import scan_existing_files
 from scripts.scheduler import run_prediction_and_archiving
+from backend.db import models
+from backend.db.database import engine
+
+# To prevent an SQLite race-condition, wait a couple seconds for Uvicorn to create the DB first
+time.sleep(3)
 
 def configure_realtime_folder():
     """Sets up realistic OS tracking covering core user directories."""

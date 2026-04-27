@@ -26,18 +26,25 @@ def run_prediction_and_archiving():
             auto_archive = settings.auto_archive_enabled
             size_threshold = settings.size_threshold
             
-        files = db.query(FileDetail).filter(FileDetail.archived == False).all()
+        files = db.query(FileDetail).filter(FileDetail.lifecycle_state != "ARCHIVED").all()
         for f in files:
             is_dormant = predict_dormancy(f)
-            if is_dormant != f.predicted_dormant:
-                f.predicted_dormant = is_dormant
+            
+            # State transitions
+            if is_dormant and f.lifecycle_state == "ACTIVE":
+                f.lifecycle_state = "DORMANT"
+            elif not is_dormant and f.lifecycle_state == "DORMANT":
+                f.lifecycle_state = "ACTIVE"
                 
             if is_dormant and auto_archive and f.file_size >= size_threshold:
                 print(f"Auto-archiving dormant file: {f.file_name}")
-                archive_path = archive_file_process(f.file_path, f.id)
-                if archive_path:
-                    f.archived = True
-                    f.archive_path = archive_path
+                archive_data = archive_file_process(f.file_path, f.id)
+                if archive_data:
+                    f.lifecycle_state = "ARCHIVED"
+                    f.archive_path = archive_data['path']
+                    f.archive_size = archive_data['size']
+                    f.compression_ratio = archive_data['ratio']
+                    f.compression_time_ms = archive_data['time_ms']
                     
         db.commit()
     except Exception as e:
