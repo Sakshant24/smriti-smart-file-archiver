@@ -36,35 +36,38 @@ def get_files(db: Session = Depends(database.get_db)):
 
 @app.get("/recommendations")
 def get_recommendations(db: Session = Depends(database.get_db)):
-    return db.query(models.FileDetail).filter(models.FileDetail.predicted_dormant == True, models.FileDetail.archived == False).all()
+    return db.query(models.FileDetail).filter(models.FileDetail.lifecycle_state == "DORMANT").all()
 
 @app.get("/archived")
 def get_archived_files(db: Session = Depends(database.get_db)):
-    return db.query(models.FileDetail).filter(models.FileDetail.archived == True).all()
+    return db.query(models.FileDetail).filter(models.FileDetail.lifecycle_state == "ARCHIVED").all()
 
 @app.post("/archive/{file_id}")
 def archive_file(file_id: int, db: Session = Depends(database.get_db)):
     file = db.query(models.FileDetail).filter(models.FileDetail.id == file_id).first()
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
-    if file.archived:
+    if file.lifecycle_state == "ARCHIVED":
         return {"message": f"File {file.file_name} is already archived"}
         
-    archive_path = archive_file_process(file.file_path, file.id)
-    if archive_path:
-        file.archived = True
-        file.archive_path = archive_path
+    archive_data = archive_file_process(file.file_path, file.id)
+    if archive_data:
+        file.lifecycle_state = "ARCHIVED"
+        file.archive_path = archive_data['path']
+        file.archive_size = archive_data['size']
+        file.compression_ratio = archive_data['ratio']
+        file.compression_time_ms = archive_data['time_ms']
         db.commit()
         return {"message": f"File {file.file_name} archived successfully."}
     else:
-        raise HTTPException(status_code=500, detail="Archiving failed")
+        raise HTTPException(status_code=500, detail="Archiving failed or file locked")
 
 @app.post("/restore/{file_id}")
 def restore_file(file_id: int, db: Session = Depends(database.get_db)):
     file = db.query(models.FileDetail).filter(models.FileDetail.id == file_id).first()
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
-    if not file.archived or not file.archive_path:
+    if file.lifecycle_state != "ARCHIVED" or not file.archive_path:
         raise HTTPException(status_code=400, detail="File is not archived")
         
     import os
@@ -73,8 +76,11 @@ def restore_file(file_id: int, db: Session = Depends(database.get_db)):
     
     success = restore_file_process(file.archive_path, original_dir)
     if success:
-        file.archived = False
+        file.lifecycle_state = "ACTIVE"
         file.archive_path = None
+        file.archive_size = None
+        file.compression_ratio = None
+        file.compression_time_ms = None
         db.commit()
         return {"message": f"File {file.file_name} restored successfully."}
     else:

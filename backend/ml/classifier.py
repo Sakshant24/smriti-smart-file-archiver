@@ -77,7 +77,7 @@ def train_model():
         db.close()
 
 def predict_dormancy(file: FileDetail) -> bool:
-    """Predicts if a file is dormant using the trained model or a fallback rule."""
+    """Predicts if a file is dormant using user bounds and trained ML."""
     if os.path.exists(MODEL_PATH):
         try:
             model = joblib.load(MODEL_PATH)

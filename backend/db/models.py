@@ -11,13 +11,16 @@ class FileDetail(Base):
     file_size = Column(Float) # in MB
     last_access_time = Column(DateTime, default=datetime.utcnow)
     access_count = Column(Integer, default=1)
-    predicted_dormant = Column(Boolean, default=False)
-    archived = Column(Boolean, default=False)
+    lifecycle_state = Column(String, default="ACTIVE") # 'ACTIVE', 'DORMANT', 'ARCHIVED'
     archive_path = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     file_type = Column(String, nullable=True)
     last_modified_time = Column(DateTime, default=datetime.utcnow)
 
+    # Advanced Storage Analytics
+    archive_size = Column(Float, nullable=True) # in MB
+    compression_ratio = Column(Float, nullable=True) # e.g. 2.5x
+    compression_time_ms = Column(Float, nullable=True) # execution speed
 
 class Settings(Base):
     __tablename__ = "settings"
